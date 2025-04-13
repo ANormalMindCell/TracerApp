@@ -3,6 +3,7 @@ const ctx = canvas.getContext('2d');
 const saveButton = document.getElementById('save-button');
 const undoButton = document.getElementById('undo-button');
 const redoButton = document.getElementById('redo-button');
+const clearButton = document.getElementById('clear-button');
 const paletteDropdown = document.getElementById('palette-dropdown');
 const customColorButton = document.getElementById('custom-color-button');
 const layersDropdown = document.getElementById('layers-dropdown');
@@ -117,7 +118,7 @@ function handleMouseUp() {
     undoStack.push(currentStroke);
     redoStack = [];
     currentStroke = [];
-    // Final redraw with correct layer order will be implemented later
+    drawImageOnCanvas(); // Add this line to redraw all strokes
 }
 
 function saveDrawing() {
@@ -236,6 +237,7 @@ canvas.addEventListener('mouseup', handleMouseUp);
 saveButton.addEventListener('click', saveDrawing);
 undoButton.addEventListener('click', undoDrawing);
 redoButton.addEventListener('click', redoDrawing);
+clearButton.addEventListener('click', clearDrawing);
 searchMenuButton.addEventListener('click', () => alert('Search Menu clicked'));
 aiAssistantButton.addEventListener('click', () => alert('AI Assistant clicked'));
 helpButton.addEventListener('click', () => alert('Help clicked'));
