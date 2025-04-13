@@ -120,7 +120,6 @@ function handleMouseMove(e) {
     const lastPoint = currentStroke.points[currentStroke.points.length - 1];
     if (x !== lastPoint.x || y !== lastPoint.y) {
         currentStroke.points.push({ x, y, timestamp });
-        drawImageOnCanvas(); // Temporary: redraw all for immediate feedback
         ctx.strokeStyle = currentPalette[currentStroke.colorIndex];
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
@@ -128,6 +127,7 @@ function handleMouseMove(e) {
         ctx.moveTo(lastPoint.x, lastPoint.y);
         ctx.lineTo(x, y);
         ctx.stroke();
+        drawImageOnCanvas(); // Move this line to the end of the if block
     }
 }
 
@@ -174,12 +174,10 @@ function redoDrawing() {
 }
 
 function clearDrawing() {
-    if (confirm('Are you sure you want to clear all strokes?')) {
-        strokes = [];
-        undoStack = [];
-        redoStack = [];
-        drawImageOnCanvas();
-    }
+    strokes = [];
+    undoStack = [];
+    redoStack = [];
+    drawImageOnCanvas();
 }
 
 function handlePaletteSelection(index) {
