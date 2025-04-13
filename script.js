@@ -90,13 +90,6 @@ function handleMouseDown(e) {
     drawing = true;
     const x = e.offsetX;
     const y = e.offsetY;
-    currentStroke = { layer: activeLayer, color: currentPalette[activePaletteColorIndex], points: [{ x, y, timestamp: Date.now() }] };
-}
-
-function handleMouseDown(e) {
-    drawing = true;
-    const x = e.offsetX;
-    const y = e.offsetY;
     const timestamp = Date.now();
 
     // Check if the palette has been modified since the last stroke
@@ -110,6 +103,24 @@ function handleMouseDown(e) {
         colorIndex: activePaletteColorIndex, // Use colorIndex here
         points: [{ x, y, timestamp }]
     };
+}
+
+function handleMouseMove(e) {
+    if (!drawing) return;
+    const x = e.offsetX;
+    const y = e.offsetY;
+    const lastPoint = currentStroke.points[currentStroke.points.length - 1];
+    if (x !== lastPoint.x || y !== lastPoint.y) {
+        currentStroke.points.push({ x, y, timestamp: Date.now() });
+        drawImageOnCanvas(); // Temporary: redraw all for immediate feedback
+        ctx.strokeStyle = currentStroke.color;
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(lastPoint.x, lastPoint.y);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+    }
 }
 
 function handleMouseUp() {
