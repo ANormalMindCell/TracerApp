@@ -33,6 +33,7 @@ const initialPalette = [
 ];
 let currentPalette = [...initialPalette];
 let activePaletteColorIndex = 0; // Default to black
+let paletteModified = false; // Flag to track if the palette has been modified
 
 function initializeCanvas(options) {
     currentWidth = options?.width || defaultWidth;
@@ -189,6 +190,7 @@ function handleCustomColor() {
     const color = prompt("Enter hex color code (e.g., #RRGGBB):");
     if (color) {
         currentPalette[activePaletteColorIndex] = color;
+        paletteModified = true; // Set the flag when palette is modified
         // Update the displayed palette
         renderPalette();
     }
