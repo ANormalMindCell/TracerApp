@@ -2,11 +2,28 @@ body { margin: 0; font-family: sans-serif; }
 #app-container { display: flex; flex-direction: column; }
 #menu-bar { display: flex; background-color: #f0f0f0; padding: 5px; }
 .menu-item { position: relative; padding: 5px 10px; cursor: pointer; }
+#menu-bar .menu-item:hover > .dropdown { display: flex; }
+#menu-bar .menu-item:nth-child(3):hover #palette-dropdown {
+    display: grid; /* Show as grid on hover of the third menu item (Palette) */
+}
 .dropdown { position: absolute; top: 100%; left: 0; background-color: #f0f0f0; border: 1px solid #ccc; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); z-index: 10; display: none; flex-direction: column; }
 .menu-item:hover .dropdown { display: flex; }
 .dropdown a, .dropdown button { display: block; padding: 8px 15px; text-decoration: none; color: #333; border: none; background: none; text-align: left; cursor: pointer; }
 .dropdown a:hover, .dropdown button:hover { background-color: #ddd; }
-#palette-dropdown { display: grid; grid-template-columns: repeat(8, 20px); gap: 5px; padding: 10px; min-width: 180px; }
+#palette-dropdown {
+    display: none; /* Ensure it is hidden by default */
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    z-index: 10;
+    grid-template-columns: repeat(8, 20px);
+    gap: 5px;
+    padding: 10px;
+    min-width: 180px;
+}
 .palette-color { width: 20px; height: 20px; border: 1px solid #999; cursor: pointer; }
 .palette-color.active { border: 2px solid white; }
 #custom-color-button { width: 100%; margin-top: 5px; }
