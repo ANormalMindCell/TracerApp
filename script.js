@@ -45,14 +45,37 @@ function initializeCanvas(options) {
     if (imagePath) {
         backgroundImage = new Image();
         backgroundImage.onload = () => {
-            // Implement brightening logic here
-            drawImageOnCanvas();
+            brightenBackgroundImage();
         };
         backgroundImage.src = imagePath;
     } else {
         ctx.fillStyle = 'rgb(224, 224, 224)';
         ctx.fillRect(0, 0, currentWidth, currentHeight);
     }
+}
+
+function brightenBackgroundImage() {
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = backgroundImage.width;
+    tempCanvas.height = backgroundImage.height;
+    tempCtx.drawImage(backgroundImage, 0, 0);
+
+    const imageData = tempCtx.getImageData(0, 0, backgroundImage.width, backgroundImage.height);
+    const data = imageData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+        // Red
+        data[i] = 192 + Math.trunc(data[i] / 4);
+        // Green
+        data[i + 1] = 192 + Math.trunc(data[i + 1] / 4);
+        // Blue
+        data[i + 2] = 192 + Math.trunc(data[i + 2] / 4);
+        // Alpha (remains unchanged)
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    drawStrokes();
 }
 
 function drawImageOnCanvas() {
@@ -63,7 +86,6 @@ function drawImageOnCanvas() {
         ctx.fillStyle = 'rgb(224, 224, 224)';
         ctx.fillRect(0, 0, currentWidth, currentHeight);
     }
-    // Redraw strokes based on layers and visibility
     drawStrokes();
 }
 
@@ -76,20 +98,23 @@ function drawStrokes() {
         ctx.fillRect(0, 0, currentWidth, currentHeight);
     }
 
-    strokes.forEach(stroke => {
-        const color = stroke.color; // Use the stored color
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        if (stroke.points.length > 0) {
-            ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-            for (let i = 1; i < stroke.points.length; i++) {
-                ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
-            }
-            ctx.stroke();
+    let currentDrawingPalette = [...initialPalette]; // Start with the initial palette
+
+    for (const record of strokes) {
+        if (record.type === 'pallete') {
+            currentDrawingPalette = record.palette;
+        } else if (record.type === 'pen-down') {
+            const color = currentDrawingPalette[record.colorIndex];
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(record.x, record.y);
+        } else if (record.type === 'draw-to') {
+            ctx.lineTo(record.x, record.y);
         }
-    });
+    }
+    ctx.stroke(); // Stroke the path after processing all draw-to events for a stroke
 }
 
 function handleMouseDown(e) {
@@ -111,7 +136,7 @@ function handleMouseDown(e) {
     currentStroke = {
         layer: activeLayer,
         colorIndex: activePaletteColorIndex, // Still store the index for saving
-        color: color, // Store the actual color for drawing
+        color: color, // Store the actual color for drawing (temporary for immediate feedback)
         points: [{ x, y, timestamp }]
     };
 }
@@ -127,7 +152,6 @@ function handleMouseMove(e) {
     const lastPoint = currentStroke.points[currentStroke.points.length - 1];
     if (x !== lastPoint.x || y !== lastPoint.y) {
         currentStroke.points.push({ x, y, timestamp });
-        // drawImageOnCanvas(); // Let's try without this for now
         ctx.strokeStyle = currentStroke.color; // Use the stored color
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
@@ -149,7 +173,35 @@ function handleMouseUp() {
 }
 
 function saveDrawing() {
-    const data = { palette: currentPalette, strokes: strokes };
+    const drawingRecords = [];
+
+    // Add the initial palette
+    drawingRecords.push({ type: 'pallete', palette: [...currentPalette] });
+
+    strokes.forEach(stroke => {
+        const penDownEvent = {
+            type: 'pen-down',
+            colorIndex: stroke.colorIndex,
+            x: stroke.points[0].x,
+            y: stroke.points[0].y,
+            timestamp: stroke.points[0].timestamp,
+            layer: stroke.layer
+        };
+        drawingRecords.push(penDownEvent);
+
+        for (let i = 1; i < stroke.points.length; i++) {
+            const deltaTime = stroke.points[i].timestamp - stroke.points[i - 1].timestamp;
+            const drawToEvent = {
+                type: 'draw-to',
+                x: stroke.points[i].x,
+                y: stroke.points[i].y,
+                deltaTime: deltaTime
+            };
+            drawingRecords.push(drawToEvent);
+        }
+    });
+
+    const data = { strokes: drawingRecords };
     const json = JSON.stringify(data);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
