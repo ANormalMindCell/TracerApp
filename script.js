@@ -118,7 +118,8 @@ function handleMouseUp() {
     undoStack.push(currentStroke);
     redoStack = [];
     currentStroke = [];
-    drawImageOnCanvas(); // Add this line to redraw all strokes
+    drawImageOnCanvas();
+    console.log(strokes);
 }
 
 function saveDrawing() {
