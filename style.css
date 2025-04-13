@@ -6,7 +6,18 @@ body { margin: 0; font-family: sans-serif; }
 #menu-bar .menu-item:nth-child(3):hover #palette-dropdown {
     display: grid; /* Show as grid on hover of the third menu item (Palette) */
 }
-.dropdown { position: absolute; top: 100%; left: 0; background-color: #f0f0f0; border: 1px solid #ccc; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); z-index: 10; display: none; flex-direction: column; }
+.dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    z-index: 10;
+    display: none;
+    flex-direction: column;
+    min-width: 250px; /* Adjust this value as needed */
+}
 .menu-item:hover .dropdown { display: flex; }
 .dropdown a, .dropdown button { display: block; padding: 8px 15px; text-decoration: none; color: #333; border: none; background: none; text-align: left; cursor: pointer; }
 .dropdown a:hover, .dropdown button:hover { background-color: #ddd; }
