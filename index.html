@@ -9,7 +9,11 @@
         <div id="menu-bar">
             <div class="menu-item">File
                 <div class="dropdown">
+                    <a href="#" id="load-button">Load</a>
                     <a href="#" id="save-button">Save</a>
+                    <a href="#" id="saveas-button">Save As...</a>
+                    <a href="#" id="background-button">Background</a>
+                    <a href="#" id="exit-button">Exit</a>
                 </div>
             </div>
             <div class="menu-item">Edit
@@ -21,7 +25,7 @@
             </div>
             <div class="menu-item">Palette
                 <div class="dropdown" id="palette-dropdown">
-                    <button id="custom-color-button">Custom...</button>
+                    <a href="#" id="custom-color-button">Custom...</a>
                 </div>
             </div>
             <div class="menu-item">Layers
@@ -38,6 +42,13 @@
         </div>
         <canvas id="drawing-canvas" width="800" height="600"></canvas>
     </div>
+    <script>
+        const tracerOptions = {
+          width: 800, // Set your desired width
+          height: 450, // Set your desired height
+          backgroundImagePath: 'butterfly.jpg' // Set the path to your image
+        };
+    </script>
     <script src="script.js"></script>
 </body>
 </html>

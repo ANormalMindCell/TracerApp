@@ -75,24 +75,15 @@ function brightenBackgroundImage() {
     }
 
     ctx.putImageData(imageData, 0, 0);
-    drawStrokes();
-}
-
-function drawImageOnCanvas() {
-    ctx.clearRect(0, 0, currentWidth, currentHeight);
-    if (backgroundImage) {
-        ctx.drawImage(backgroundImage, 0, 0, currentWidth, currentHeight);
-    } else {
-        ctx.fillStyle = 'rgb(224, 224, 224)';
-        ctx.fillRect(0, 0, currentWidth, currentHeight);
-    }
-    drawStrokes();
 }
 
 function drawStrokes() {
     ctx.clearRect(0, 0, currentWidth, currentHeight);
     if (backgroundImage) {
+        // Redraw the original image first
         ctx.drawImage(backgroundImage, 0, 0, currentWidth, currentHeight);
+        // Then apply the brightening
+        brightenBackgroundImage();
     } else {
         ctx.fillStyle = 'rgb(224, 224, 224)';
         ctx.fillRect(0, 0, currentWidth, currentHeight);
@@ -101,20 +92,35 @@ function drawStrokes() {
     let currentDrawingPalette = [...initialPalette]; // Start with the initial palette
 
     for (const record of strokes) {
-        if (record.type === 'pallete') {
-            currentDrawingPalette = record.palette;
+        if (record.type === 'palette') {
+            currentDrawingPalette = record.colorlist;
         } else if (record.type === 'pen-down') {
             const color = currentDrawingPalette[record.colorIndex];
             ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1;
             ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(record.x, record.y);
-        } else if (record.type === 'draw-to') {
-            ctx.lineTo(record.x, record.y);
+            ctx.beginPath(); // Ensure beginPath is called before moveTo
+            ctx.moveTo(record.points[0].x, record.points[0].y);
+            for (let i = 1; i < record.points.length; i++) {
+                ctx.lineTo(record.points[i].x, record.points[i].y);
+            }
+            ctx.stroke(); // Ensure stroke is called for each stroke
         }
     }
-    ctx.stroke(); // Stroke the path after processing all draw-to events for a stroke
+}
+
+function drawImageOnCanvas() {
+    ctx.clearRect(0, 0, currentWidth, currentHeight);
+    if (backgroundImage) {
+        // Redraw the original image first
+        ctx.drawImage(backgroundImage, 0, 0, currentWidth, currentHeight);
+        // Then apply the brightening
+        brightenBackgroundImage();
+    } else {
+        ctx.fillStyle = 'rgb(224, 224, 224)';
+        ctx.fillRect(0, 0, currentWidth, currentHeight);
+    }
+    drawStrokes(); // Draw completed strokes
 }
 
 function handleMouseDown(e) {
@@ -122,23 +128,25 @@ function handleMouseDown(e) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    const x = parseFloat(((e.clientX - rect.left) * scaleX).toFixed(2));
+    const y = parseFloat(((e.clientY - rect.top) * scaleY).toFixed(2));
     const timestamp = Date.now();
     const color = currentPalette[activePaletteColorIndex]; // Store the actual color
 
     // Check if the palette has been modified since the last stroke
     if (paletteModified) {
-        strokes.push({ type: 'pallete', palette: [...currentPalette] });
+        strokes.push({ type: 'palette', colorlist: [...currentPalette] });
         paletteModified = false; // Reset the flag
     }
 
     currentStroke = {
         layer: activeLayer,
         colorIndex: activePaletteColorIndex, // Still store the index for saving
-        color: color, // Store the actual color for drawing (temporary for immediate feedback)
+        color: color, // Store the actual color for drawing
         points: [{ x, y, timestamp }]
     };
+    ctx.beginPath(); // Start a new path on mouse down
+    ctx.moveTo(x, y); // Move to the starting point
 }
 
 function handleMouseMove(e) {
@@ -146,17 +154,15 @@ function handleMouseMove(e) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    const x = parseFloat(((e.clientX - rect.left) * scaleX).toFixed(2));
+    const y = parseFloat(((e.clientY - rect.top) * scaleY).toFixed(2));
     const timestamp = Date.now();
     const lastPoint = currentStroke.points[currentStroke.points.length - 1];
     if (x !== lastPoint.x || y !== lastPoint.y) {
         currentStroke.points.push({ x, y, timestamp });
-        ctx.strokeStyle = currentStroke.color; // Use the stored color
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = currentStroke.color;
+        ctx.lineWidth = 1;
         ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(lastPoint.x, lastPoint.y);
         ctx.lineTo(x, y);
         ctx.stroke();
     }
@@ -165,49 +171,56 @@ function handleMouseMove(e) {
 function handleMouseUp() {
     if (!drawing) return;
     drawing = false;
-    strokes.push(currentStroke);
-    undoStack.push(currentStroke);
+    const firstPoint = currentStroke.points[0];
+    const penDownEvent = {
+        type: 'pen-down',
+        layer: currentStroke.layer,
+        colorIndex: currentStroke.colorIndex,
+        timestamp: firstPoint.timestamp,
+        x: firstPoint.x,
+        y: firstPoint.y,
+        points: currentStroke.points // Include the points array here
+    };
+    strokes.push(penDownEvent);
+    undoStack.push(penDownEvent); // Update undoStack to store the same format
     redoStack = [];
     currentStroke = [];
     drawImageOnCanvas();
 }
 
 function saveDrawing() {
-    const drawingRecords = [];
+    let jsonLines = JSON.stringify({ type: 'palette', colorlist: [...initialPalette] }) + '\n';
 
-    // Add the initial palette
-    drawingRecords.push({ type: 'pallete', palette: [...currentPalette] });
+    for (const record of strokes) {
+        if (record.type === 'palette') {
+            jsonLines += JSON.stringify({ type: 'palette', colorlist: record.colorlist }) + '\n';
+        } else if (record.type === 'pen-down') { // It's a pen-down record
+            jsonLines += JSON.stringify({
+                type: 'pen-down',
+                layer: record.layer,
+                colorIndex: record.colorIndex,
+                timestamp: record.timestamp,
+                x: record.x,
+                y: record.y
+            }) + '\n';
 
-    strokes.forEach(stroke => {
-        const penDownEvent = {
-            type: 'pen-down',
-            colorIndex: stroke.colorIndex,
-            x: stroke.points[0].x,
-            y: stroke.points[0].y,
-            timestamp: stroke.points[0].timestamp,
-            layer: stroke.layer
-        };
-        drawingRecords.push(penDownEvent);
-
-        for (let i = 1; i < stroke.points.length; i++) {
-            const deltaTime = stroke.points[i].timestamp - stroke.points[i - 1].timestamp;
-            const drawToEvent = {
-                type: 'draw-to',
-                x: stroke.points[i].x,
-                y: stroke.points[i].y,
-                deltaTime: deltaTime
-            };
-            drawingRecords.push(drawToEvent);
+            for (let i = 1; i < record.points.length; i++) {
+                const deltaTime = record.points[i].timestamp - record.points[i - 1].timestamp;
+                jsonLines += JSON.stringify({
+                    type: 'move-to',
+                    x: record.points[i].x,
+                    y: record.points[i].y,
+                    timedelta: deltaTime
+                }) + '\n';
+            }
         }
-    });
+    }
 
-    const data = { strokes: drawingRecords };
-    const json = JSON.stringify(data);
-    const blob = new Blob([json], { type: 'application/json' });
+    const blob = new Blob([jsonLines], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'drawing_data.json';
+    a.download = 'drawing_data.jsonl';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -218,7 +231,9 @@ function undoDrawing() {
     if (undoStack.length > 0) {
         const lastStroke = undoStack.pop();
         redoStack.push(lastStroke);
-        strokes = strokes.filter(stroke => stroke !== lastStroke);
+        if (strokes.length > 0) {
+            strokes.pop();
+        }
         drawImageOnCanvas();
     }
 }
@@ -331,6 +346,10 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Initialization
-initializeCanvas({}); // You can pass options here if needed
+if (typeof tracerOptions !== 'undefined') {
+    initializeCanvas(tracerOptions);
+} else {
+    initializeCanvas({}); // Use default if tracerOptions is not defined
+}
 renderPalette();
 renderLayersDropdown();
