@@ -89,8 +89,11 @@ function drawStrokes() {
 
 function handleMouseDown(e) {
     drawing = true;
-    const x = e.offsetX;
-    const y = e.offsetY;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
     const timestamp = Date.now();
 
     // Check if the palette has been modified since the last stroke
@@ -101,40 +104,30 @@ function handleMouseDown(e) {
 
     currentStroke = {
         layer: activeLayer,
-        colorIndex: activePaletteColorIndex, // Use colorIndex here
+        colorIndex: activePaletteColorIndex,
         points: [{ x, y, timestamp }]
     };
 }
 
-// function handleMouseMove(e) {
-//     if (!drawing) return;
-//     const x = e.offsetX;
-//     const y = e.offsetY;
-//     const lastPoint = currentStroke.points[currentStroke.points.length - 1];
-//     if (x !== lastPoint.x || y !== lastPoint.y) {
-//         currentStroke.points.push({ x, y, timestamp: Date.now() });
-//         drawImageOnCanvas(); // Temporary: redraw all for immediate feedback
-//         ctx.strokeStyle = currentStroke.color;
-//         ctx.lineWidth = 2;
-//         ctx.lineCap = 'round';
-//         ctx.beginPath();
-//         ctx.moveTo(lastPoint.x, lastPoint.y);
-//         ctx.lineTo(x, y);
-//         ctx.stroke();
-//     }
-// }
-
 function handleMouseMove(e) {
     if (!drawing) return;
-    const x = e.offsetX;
-    const y = e.offsetY;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
     const timestamp = Date.now();
     const lastPoint = currentStroke.points[currentStroke.points.length - 1];
     if (x !== lastPoint.x || y !== lastPoint.y) {
         currentStroke.points.push({ x, y, timestamp });
-        drawImageOnCanvas(); // Clear the canvas
-        ctx.fillStyle = currentPalette[activePaletteColorIndex]; // Use fillStyle for rectangle
-        ctx.fillRect(x - 2, y - 2, 4, 4); // Draw a small rectangle around the mouse position
+        drawImageOnCanvas(); // Temporary: redraw all for immediate feedback
+        ctx.strokeStyle = currentPalette[currentStroke.colorIndex];
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(lastPoint.x, lastPoint.y);
+        ctx.lineTo(x, y);
+        ctx.stroke();
     }
 }
 
@@ -146,7 +139,6 @@ function handleMouseUp() {
     redoStack = [];
     currentStroke = [];
     drawImageOnCanvas();
-    console.log(strokes);
 }
 
 function saveDrawing() {
