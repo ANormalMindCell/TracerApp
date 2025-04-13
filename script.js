@@ -68,12 +68,17 @@ function drawImageOnCanvas() {
 }
 
 function drawStrokes() {
-    // Implement layer-based drawing here
-    // Iterate through layers back to front, and draw visible strokes for each layer
+    ctx.clearRect(0, 0, currentWidth, currentHeight);
+    if (backgroundImage) {
+        ctx.drawImage(backgroundImage, 0, 0, currentWidth, currentHeight);
+    } else {
+        ctx.fillStyle = 'rgb(224, 224, 224)';
+        ctx.fillRect(0, 0, currentWidth, currentHeight);
+    }
+
     strokes.forEach(stroke => {
-        // Check if stroke's layer is visible
-        // Set stroke color and draw
-        ctx.strokeStyle = stroke.color;
+        const color = stroke.color; // Use the stored color
+        ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
         ctx.beginPath();
@@ -95,6 +100,7 @@ function handleMouseDown(e) {
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
     const timestamp = Date.now();
+    const color = currentPalette[activePaletteColorIndex]; // Store the actual color
 
     // Check if the palette has been modified since the last stroke
     if (paletteModified) {
@@ -104,7 +110,8 @@ function handleMouseDown(e) {
 
     currentStroke = {
         layer: activeLayer,
-        colorIndex: activePaletteColorIndex,
+        colorIndex: activePaletteColorIndex, // Still store the index for saving
+        color: color, // Store the actual color for drawing
         points: [{ x, y, timestamp }]
     };
 }
@@ -120,14 +127,14 @@ function handleMouseMove(e) {
     const lastPoint = currentStroke.points[currentStroke.points.length - 1];
     if (x !== lastPoint.x || y !== lastPoint.y) {
         currentStroke.points.push({ x, y, timestamp });
-        ctx.strokeStyle = currentPalette[currentStroke.colorIndex];
+        // drawImageOnCanvas(); // Let's try without this for now
+        ctx.strokeStyle = currentStroke.color; // Use the stored color
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(lastPoint.x, lastPoint.y);
         ctx.lineTo(x, y);
         ctx.stroke();
-        drawImageOnCanvas(); // Move this line to the end of the if block
     }
 }
 
