@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tracer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app-container">
+        <div id="menu-bar">
+            <div class="menu-item">File
+                <div class="dropdown">
+                    <a href="#" id="save-button">Save</a>
+                </div>
+            </div>
+            <div class="menu-item">Edit
+                <div class="dropdown">
+                    <a href="#" id="undo-button">Undo (Ctrl+Z)</a>
+                    <a href="#" id="redo-button">Redo (Ctrl+Y)</a>
+                </div>
+            </div>
+            <div class="menu-item">Palette
+                <div class="dropdown" id="palette-dropdown">
+                    <button id="custom-color-button">Custom...</button>
+                </div>
+            </div>
+            <div class="menu-item">Layers
+                <div class="dropdown" id="layers-dropdown">
+                    </div>
+            </div>
+            <div class="menu-item">Help
+                <div class="dropdown">
+                    <a href="#" id="search-menu-button">Search Menu</a>
+                    <a href="#" id="ai-assistant-button">AI Assistant</a>
+                    <a href="#" id="help-button">Help</a>
+                </div>
+            </div>
+        </div>
+        <canvas id="drawing-canvas"></canvas>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
